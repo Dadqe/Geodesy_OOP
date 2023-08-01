@@ -1,0 +1,69 @@
+{
+    "aPoints": [
+        {
+            "Deg": 125,
+            "Min": 38,
+            "Sec": 54,
+            "HorDist": 463.62
+        },
+        {
+            "Deg": 145,
+            "Min": 15,
+            "Sec": 54,
+            "HorDist": 385.33
+        },
+        {
+            "Deg": 111,
+            "Min": 38,
+            "Sec": 24,
+            "HorDist": 302.44
+        },
+        {
+            "Deg": 137,
+            "Min": 16,
+            "Sec": 30,
+            "HorDist": 284.05
+        },
+        {
+            "Deg": 192,
+            "Min": 43,
+            "Sec": 0,
+            "HorDist": 277.6
+        },
+        {
+            "Deg": 84,
+            "Min": 7,
+            "Sec": 36,
+            "HorDist": 389.68
+        },
+        {
+            "Deg": 190,
+            "Min": 8,
+            "Sec": 12,
+            "HorDist": 365.04
+        },
+        {
+            "Deg": 93,
+            "Min": 13,
+            "Sec": 48,
+            "HorDist": 434.37
+        }
+    ],
+    "bearingAngle": {
+        "Deg": 27,
+        "Min": 12,
+        "Sec": 42
+    },
+    "coords": [
+        {
+            "X": 19416.22,
+            "Y": 12604.91 
+        },
+        {
+            "X": 19231.28,
+            "Y": 12919.66 
+        }
+    ],
+    "direction_of_circling": "right",
+    "side_of_angles": "right"
+}

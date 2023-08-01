@@ -12,7 +12,7 @@ class Polygon:
         '''
         # type: ignore
         # db = DB("Data/Input/DataInput6.json")
-        # db = {'Answer': 'I have not get any data'}
+        # db = {'Answer': 'I have not get any data'}    # На всякий случай, если совсем ничего не передадут и нечего читать будет. Мб это раньше надо в АПИ самой проверку делать и возвращать там что-то
         if from_local:
             db = DB(f"Data/Input/DataInput{data}.json")
         else:
@@ -24,9 +24,16 @@ class Polygon:
         self.initial_coords = self.all_data.get('coords')
         self.help_side = self.get_help_side()   # ?Может это и не надо в атрибут прям вычислять, а лучше при вычислении теоретической суммы горизонтальных углов вычислить разок и всё.
         
-        self.angles = [Angle(d.get('Deg'), d.get('Min'), d.get('Sec'), d.get('HorDist')) for d in self.measured_angles]   # type: ignore # Будет храниться список углов, экземпляры Angle
+        # self.angles = [Angle1(d.get('Deg'), d.get('Min'), d.get('Sec'), d.get('HorDist')) for d in self.measured_angles]   # type: ignore # Будет храниться список углов, экземпляры Angle
+        self.angles = {i: Angle1(d.get('Deg'), d.get('Min'), d.get('Sec'), d.get('HorDist')) for i, d in enumerate(self.measured_angles)} # type: ignore
         self.theoretical_sum_angles = self.calc_sum_of_theoretical_angles()  # теоретическая сумма углов, нужно будет рассчитывать, когда заполнится массив углов
-        self.practical_sum_angles = self.calc_sum_of_practice_angles()  # практическая сумма углов, просто посчитать сумму углов в массиве
+        self.practical_sum_angles = self.calc_sum_of_practice_angles(self.angles)  # практическая сумма углов, просто посчитать сумму углов в массиве
+        self.difference = Angle1(DD=(self.theoretical_sum_angles.DD - self.practical_sum_angles.DD))  # Невязка
+        # self.difference = Angle1(DD=self.difference.DD * 4) # Для тестов бОльших значений невязки для метода calc_and_send_amendment. После отладки закомментить/удалить
+        
+        self.sort_perim = dict(sorted(self.angles.items(), key=lambda x: x[1].DD, reverse=True))
+        self.fixed_angles = self.angles.copy()
+        
         self.c = 0  # поправку посчитать
         self.d = 0  # может почситать невязку для угла
         
@@ -58,18 +65,61 @@ class Polygon:
         help_side = self.get_help_side()
         res = 180 * (n - 2) if help_side == 'inner' else 180 * (n + 2)
         
-        return res
+        return Angle1(DD=res)
         
     
-    def calc_sum_of_practice_angles(self):
+    def calc_sum_of_practice_angles(self, angles):
         '''
         Расситываю практическую сумму гор. углов. Считаю в DD
         '''
         
-        sum_angles = sum([a.convert_to_DD() for a in self.angles])
+        sum_angles = sum([a.DD for a in angles.values()])
         
         return Angle1(DD=sum_angles)
-
+    
+    
+    def calc_and_send_amendment(self, difference):
+        '''
+        В этой функции сравниваю невязку с количеством углов и принимаю решение - каким методом раскидывать невязку.
+        '''
+        
+        one_sec = Angle1(0, 0, 1).DD
+        correction_in_each_corner = difference.DD / len(self.angles)   # Считаю в DD какой угол надо раскидывать в каждый угол.
+        
+        # print(difference.DD / one_sec)
+        if correction_in_each_corner < one_sec and difference.DD != 0:
+            ''' Если секунд меньше чем количество углов (значит в сравнении получится величина меньше чем одна секунда) - надо раскидать по одной секунде начиная с бОльшего по величине угла в полигоне '''
+            print("1", difference)
+            sort_index_angles = list(self.sort_perim.keys())
+            
+            for i in range(int(difference.DD / one_sec)):
+                ''' Посчитано сколько раз надо раскидать одну секунду в углы и раскидывается '''
+                # print("old", self.fixed_angles[sort_index_angles[i]])
+                self.fixed_angles[sort_index_angles[i]] += one_sec
+                # print("new", self.fixed_angles[sort_index_angles[i]])
+            
+            # Попробовать на исходных данных, где не надо будет из этого условия раскидывать. И проверить там, где большая невязка, что б она сразу за одно условие не раскидалась
+            print("Вызываю ещё раз функцию раскидки поправок")
+            new_diffrerence = Angle1(DD=(self.theoretical_sum_angles.DD - self.calc_sum_of_practice_angles(self.fixed_angles).DD))  # Невязка
+            self.calc_and_send_amendment(new_diffrerence)
+        elif correction_in_each_corner > one_sec:
+            ''' Сначала поровну раскидаю секунды, а потом снова вызову эту функцию для проверки
+            Во избежании неправильной раскидки я буду вычислять сколько градусов надо вкидывать через обычное деление, получу DD, а после сделаю из него угол и и возьму DD уже из угла, чаще всего он будет меньше, чем получилось при делении.
+            '''
+            print("2", difference)
+            
+            need_correct = Angle1(DD=correction_in_each_corner)
+            for i in self.fixed_angles:
+                self.fixed_angles[i] += need_correct.DD
+            
+            print("Вызываю ещё раз функцию раскидки поправок")
+            new_diffrerence = Angle1(DD=(self.theoretical_sum_angles.DD - self.calc_sum_of_practice_angles(self.fixed_angles).DD))  # Невязка
+            self.calc_and_send_amendment(new_diffrerence)
+            
+        else:
+            print("3", difference, "Невязку не надо раскидывать")
+            print(self.calc_sum_of_practice_angles(self.fixed_angles))
+        
 
 class Angle:
     def __init__(self, D: int, M: int, S: int, Distance: float=0):
@@ -128,8 +178,9 @@ class Angle1:
         Возможно надо накинуть проверку передаваемых аргументов, что б они не были сверхнормы, что б не допускать ошибочнопереданных чисел
         '''
         if DD:
-            self.DD = DD
+            self.DD = DD    # Вычисления будут идти без округлений. Из этих вычислений будут получаться ДМС
             self.D, self.M, self.S = self.convert_to_DMS(self.DD)
+            self.DD = self.convert_to_DD()  # А уже после получения ДМС пересчитаю ДД, что б всё верно хранилось, без лишней херни
         else:
             self.D = D
             self.M = M
@@ -142,14 +193,28 @@ class Angle1:
         # фиксанутые, значит изменённые, значения уравненных углов... их надо будет в одну строку написать, использовать convert_to_DMS передав туда получаемый уравненный угол в DD
     
     
-    def convert_to_DD(self):
+    def convert_to_DD(self) -> float:
         ''' из гр/мин/сек раскладываю в десятичный угол без округления, что б не запортачить дальнейшие вычисления '''
         
         return self.D + self.M / 60 + self.S / 3600
     
     
+    def recalc_DMS(self):
+        ''' Пересчитаю DMS. Понадобится тогда, когда DD изменится в рамках добавления поправки, например. '''
+        
+        self.D, self.M, self.S = self.convert_to_DMS(self.DD)
+    
+    
+    def __add__(self, angle_DD: float):
+        if not isinstance(angle_DD, float):
+            raise ArithmeticError("Правый операнд должен быть типом float")
+        
+        return Angle1(DD=self.DD + angle_DD, Distance=self.Distance)
+    
+    
     def __str__(self):
         return f'{self.D}°{self.M}\'{self.S}" {self.Distance}'
+    
     
     def __repr__(self):
         ''' Чтобы и при обычном печатании списка, где находятся эти углы печаталось красиво '''
@@ -200,9 +265,95 @@ if __name__ == '__main__':
     # print(f'DD - {a.convert_to_DD()}')              # get DD
     # print(f'DMS - {Angle.convert_to_DMS(a.DD)}')    # get DMS
     # db = DB("Data/Input/DataInput6.json")
-    p = Polygon(6, True)
-    # print(p.theoretical_sum)
-    print(p.practical_sum_angles)
+    p = Polygon(3, True)
     
+    
+    # four_sec = Angle1(0, 0, 9)  # difference
+    # one_sec = Angle1(0, 0, 1)
+    
+    # # print(p.difference.convert_to_DD())
+    # print(four_sec.convert_to_DD())
+    # print(one_sec.convert_to_DD())
+    # # r = p.difference.convert_to_DD() / 1
+    
+    # r = four_sec.convert_to_DD() / 2
+    # print(r, r <= one_sec.convert_to_DD())
+
+    # dif = p.difference.DD
+    # one_sec = Angle1(0, 0, 1).DD
+    # delenie = dif / one_sec
+    
+    # print(dif * 8 / one_sec)
+    
+    # Проверяю метод __add__ сложение
+    one = Angle1(0, 0, 1)
+    # print(one.DD)
+    ten = Angle1(0, 0, 10)
+    # print(ten.DD)
+    # eleven = one + ten.DD
+    # print(eleven, eleven.DD, eleven.DD == Angle1(0, 0, 11).DD)
+    
+    # print(Angle1(DD=ten.DD / 4), Angle1(DD=ten.DD / 4).DD)
+    # print(ten.DD / 4)
+    
+    # print(one)
+    # print(one.DD)
+    
+    # bb = Angle1(DD=0.0001277777777777778)
+    # print(bb, bb.DD)
+    
+    # one + one.DD
+    # print(one)
+    # d = p.difference.DD # 2
+    # print(d)
+    # print(d / one.DD)
+    # d = d * 3      # 6
+    # print(d)
+    # print(d / one.DD)
+    # d = d + one.DD      # 4
+    # print(d)
+    # print(d / one.DD)
+    # d = d + one.DD      # 5 косячится число, превращается не пойми во что
+    # print(d)
+    # print(d / one.DD)
+    # d = d + one.DD      # 6 косячится число, превращается не пойми во что
+    # print(d)
+    # print(d / one.DD)
+    
+    # print(f"dif: {dif}")
+    # print(f"one_sec: {one_sec}")
+    
+    # while dif:
+    #     print(dif)
+    #     dif -= one_sec
+    
+    # dif = dif - one_sec
+    # dif = dif - one_sec
+    # print(dif)
+    # print(one_sec)
+    
+    # calc()
+    # print(initial_perim)
+    # print(sort_perim)
+    
+    # Проверяю раскидку невязки
+    print(p.angles)
+    print(p.sort_perim)
+    p.calc_and_send_amendment(p.difference)
+    print(p.fixed_angles)
+    print(Angle1(DD=2340.0))
+    
+    # Переписываю принцип хранения углов на словарь через генератор словарей
+    # print(p.angles)
+    # print(p.angles1)
+    
+    # # sum_angles = sum([a.convert_to_DD() for a in self.angles])
+    # print(sum([a.convert_to_DD() for a in p.angles1.values()]))
+    
+    # проверяю сортировку словарей
+    # sort_perim = dict(sorted(p.angles.items(), key=lambda x: x[1].DD, reverse=True))
+    # print(sort_perim)
+    # sort_perim = dict(sorted(sort_perim.items()))
+    # print(sort_perim)
     
     ...
