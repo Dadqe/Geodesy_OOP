@@ -2,15 +2,15 @@ from calc import *
 
 
 # a = Angle(5, 1, 11, 29.138)                     # init Angle
-# a1 = Angle1(DD=900.198470)                      # init Angle1
+# a1 = Angle(DD=900.198470)                      # init Angle
 # print(f'DD - {a.convert_to_DD()}')              # get DD
 # print(f'DMS - {Angle.convert_to_DMS(a.DD)}')    # get DMS
 # db = DB("Data/Input/DataInput6.json")
-p = Polygon(3, True)
+p = Polygon(6, True)
 
 
-# four_sec = Angle1(0, 0, 9)  # difference
-# one_sec = Angle1(0, 0, 1)
+# four_sec = Angle(0, 0, 9)  # difference
+# one_sec = Angle(0, 0, 1)
 
 # # print(p.difference.convert_to_DD())
 # print(four_sec.convert_to_DD())
@@ -21,26 +21,26 @@ p = Polygon(3, True)
 # print(r, r <= one_sec.convert_to_DD())
 
 # dif = p.difference.DD
-# one_sec = Angle1(0, 0, 1).DD
+# one_sec = Angle(0, 0, 1).DD
 # delenie = dif / one_sec
 
 # print(dif * 8 / one_sec)
 
 # Проверяю метод __add__ сложение
-one = Angle1(0, 0, 1)
+one = Angle(0, 0, 1)
 # print(one.DD)
-ten = Angle1(0, 0, 10)
+ten = Angle(0, 0, 10)
 # print(ten.DD)
 # eleven = one + ten.DD
-# print(eleven, eleven.DD, eleven.DD == Angle1(0, 0, 11).DD)
+# print(eleven, eleven.DD, eleven.DD == Angle(0, 0, 11).DD)
 
-# print(Angle1(DD=ten.DD / 4), Angle1(DD=ten.DD / 4).DD)
+# print(Angle(DD=ten.DD / 4), Angle(DD=ten.DD / 4).DD)
 # print(ten.DD / 4)
 
 # print(one)
 # print(one.DD)
 
-# bb = Angle1(DD=0.0001277777777777778)
+# bb = Angle(DD=0.0001277777777777778)
 # print(bb, bb.DD)
 
 # one + one.DD
@@ -78,11 +78,11 @@ ten = Angle1(0, 0, 10)
 # print(sort_perim)
 
 # Проверяю раскидку невязки
-print(p.angles)
-print(p.sort_perim)
-p.calc_and_send_amendment(p.difference)
-print(p.fixed_angles)
-print(Angle1(DD=2340.0))
+# print(p.angles)
+# print(p.sort_perim)
+# p.calc_and_send_amendment(p.difference)
+# print(p.fixed_angles)
+# print(Angle(DD=2340.0))
 
 # Переписываю принцип хранения углов на словарь через генератор словарей
 # print(p.angles)
@@ -96,3 +96,6 @@ print(Angle1(DD=2340.0))
 # print(sort_perim)
 # sort_perim = dict(sorted(sort_perim.items()))
 # print(sort_perim)
+
+for i in range(-10):
+    print(i)
