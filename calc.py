@@ -203,6 +203,7 @@ class Polygon:
         
         one_sec = Angle(0, 0, 1).DD
         correction_in_each_corner = difference.DD / len(self.angles)
+        print("Start", self.practical_sum_angles, self.practical_sum_angles.DD)
         
         if abs(correction_in_each_corner) < one_sec and difference.DD != 0:
             ''' Если секунд меньше чем количество углов (значит в сравнении получится величина меньше чем одна секунда) - надо раскидать по одной секунде начиная с бОльшего по величине угла в полигоне '''
@@ -218,7 +219,9 @@ class Polygon:
             # Попробовать на исходных данных, где не надо будет из этого условия раскидывать. И проверить там, где большая невязка, что б она сразу за одно условие не раскидалась
             print("Вызываю ещё раз функцию раскидки поправок")
             new_diffrerence = Angle(DD=(self.theoretical_sum_angles.DD - self.calc_sum_of_practice_angles(self.fixed_angles).DD))  # Невязка
+            print("past 1", self.calc_sum_of_practice_angles(self.fixed_angles), self.calc_sum_of_practice_angles(self.fixed_angles).DD)
             self.calc_and_send_amendment(new_diffrerence)
+            
             # print("new dif", new_diffrerence)
         elif abs(correction_in_each_corner) > one_sec:
             ''' Сначала поровну раскидаю секунды, а потом снова вызову эту функцию для проверки
@@ -232,11 +235,13 @@ class Polygon:
             
             print("Вызываю ещё раз функцию раскидки поправок")
             new_diffrerence = Angle(DD=(self.theoretical_sum_angles.DD - self.calc_sum_of_practice_angles(self.fixed_angles).DD))  # Невязка
+            print("past 2", self.calc_sum_of_practice_angles(self.fixed_angles), self.calc_sum_of_practice_angles(self.fixed_angles).DD)
             self.calc_and_send_amendment(new_diffrerence)
-            # print("new dif", new_diffrerence)
             
+            # print("new dif", new_diffrerence)
         else:
             print("3", difference, "Невязку не надо раскидывать")
+            print("past 3", self.calc_sum_of_practice_angles(self.fixed_angles), self.calc_sum_of_practice_angles(self.fixed_angles).DD)
             print(self.calc_sum_of_practice_angles(self.fixed_angles))
 
 
@@ -249,8 +254,9 @@ class Angle:
         Возможно надо накинуть проверку передаваемых аргументов, что б они не были сверхнормы, что б не допускать ошибочнопереданных чисел
         '''
         if DD:
-            self.DD = DD    # Вычисления будут идти без округлений. Из этих вычислений будут получаться ДМС
-            self.D, self.M, self.S = self.convert_to_DMS(self.DD)
+            self.DD = round(DD, 12)    # Вычисления будут идти без округлений. Из этих вычислений будут получаться ДМС
+            self.convert_to_DMS()
+            # self.D, self.M, self.S = self.convert_to_DMS(self.DD)
             self.DD = self.convert_to_DD()  # А уже после получения ДМС пересчитаю ДД, что б всё верно хранилось, без лишней херни
         else:
             self.D = D
@@ -259,16 +265,43 @@ class Angle:
             self.DD = self.convert_to_DD()
     
     
+    @property
+    def D(self):
+        return self._D
+    
+    @D.setter
+    def D(self, D):
+        self._D = D
+    
+    @property
+    def M(self):
+        return self._M
+    
+    @M.setter
+    def M(self, M):
+        self._M = M
+    
+    @property
+    def S(self):
+        return self._S
+    
+    @S.setter
+    def S(self, S):
+        self._S = S
+    
+    @property
+    def DD(self):
+        return self._DD
+    
+    @DD.setter
+    def DD(self, DD):
+        self._DD = DD
+    
+    
     def convert_to_DD(self) -> float:
         ''' из гр/мин/сек раскладываю в десятичный угол без округления, что б не запортачить дальнейшие вычисления '''
         
         return self.D + self.M / 60 + self.S / 3600
-    
-    
-    def recalc_DMS(self):
-        ''' Пересчитаю DMS. Понадобится тогда, когда DD изменится в рамках добавления поправки, например. '''
-        
-        self.D, self.M, self.S = self.convert_to_DMS(self.DD)
     
     
     def __add__(self, angle_DD: float):
@@ -288,17 +321,14 @@ class Angle:
         return f'{self.D}°{self.M}\'{self.S}"'
     
     
-    @staticmethod
-    def convert_to_DMS(DD: float):
+    def convert_to_DMS(self):
         ''' 
         из десятичного угла получается гр/мин/сек 
         '''
         
-        d = int(DD)
-        m = int((DD - d) * 60)
-        s = int(round((DD - d - m / 60) * 3600, 0))
-        
-        return (d, m, s)
+        self.D = int(self.DD)
+        self.M = int((self.DD - self.D) * 60)
+        self.S = int(round((self.DD - self.D - self.M / 60) * 3600, 0))
 
 
 class Point:
@@ -339,10 +369,10 @@ class DB:
 
 
 if __name__ == '__main__':
-    p = Polygon(6, True)
+    p = Polygon(3, True)
     # Проверяю раскидку невязки
-    print(p.angles)
-    print(p.sort_perim)
+    # print(p.angles)
+    # print(p.sort_perim)
     print(p.theoretical_sum_angles.DD)
     print(p.practical_sum_angles.DD)
     print(p.difference)
@@ -354,5 +384,8 @@ if __name__ == '__main__':
     # a += a1.DD if p.difference.DD > 0 else -a1.DD
     # print(a)
     p.calc_and_send_amendment(p.difference)
+    # b = Angle(2939, 59, 50)
+    # b += Angle(0, 0, 10).DD
+    # print(b)
     # print(p.fixed_angles)
     ...
