@@ -6,7 +6,7 @@ from calc import *
 # print(f'DD - {a.convert_to_DD()}')              # get DD
 # print(f'DMS - {Angle.convert_to_DMS(a.DD)}')    # get DMS
 # db = DB("Data/Input/DataInput6.json")
-p = Polygon(6, True)
+# p = Polygon(6, True)
 
 
 # four_sec = Angle(0, 0, 9)  # difference
@@ -27,8 +27,8 @@ p = Polygon(6, True)
 # print(dif * 8 / one_sec)
 
 # Проверяю метод __add__ сложение
-one = Angle(0, 0, 3600)
-print(one)
+# one = Angle(0, 0, 3600)
+# print(one)
 # ten = Angle(0, 0, 10)
 # print(ten.DD)
 # eleven = one + ten.DD
@@ -103,3 +103,9 @@ print(one)
 # с = b%a
 # print(с)
 # print(b % a)
+
+
+l = [1, 2, 3, 4, 5]
+
+for i in range(len(l)):
+    print(l[i-1], l[i])

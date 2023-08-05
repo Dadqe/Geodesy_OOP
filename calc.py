@@ -39,6 +39,13 @@ class Polygon:
             raise ArithmeticError(f'''Исправленные горизонтальные углы не равны теоретическим
 Теория: {self.theoretical_sum_angles}
 Практика исправленная: {self.calc_sum_of_practice_angles(self.fixed_angles)}''')
+        
+        self.all_bearing_angles = self.get_all_bearing_angles(self.bearing_angle, list(self.fixed_angles.values()))
+        
+        if self.bearing_angle.DD != self.all_bearing_angles[-1].DD:
+            raise ArithmeticError("Последний вычисленный дир. угол не сошёлся с исходным, надо бы что-то сделать")
+        
+        self.all_points = ...
     
     
     def get_help_side(self) -> str:
@@ -126,27 +133,25 @@ class Polygon:
             # print("Sum of fixed ang", self.calc_sum_of_practice_angles(self.fixed_angles))
     
     
-    def calc_next_bearing(self, prev_bearing: float, corrected_angle: float, side: str ='right') -> float:
-        '''Буду передавать предыдущий дирекционный угол и исправленный горизонтальный угол на пункте. Возвращать вычисленный дирекционный угол. Буду использовать это в цикле для добавления в список. Возможно использовать side что б использовать разные формулы для добавления исправленного горизонтального угла с различным знаком'''
+    def get_all_bearing_angles(self, start_bearing, correct_angles, side: str ='right'):
+        '''Посчитать все дирекционные углы, исходя из того, какой начальный дир.угол и какие исправленные углы были получены. Учитывается сторона, с который проводились вычисления относительно хода полигона.'''
         
-        bearing = 0
+        previous_bearing = start_bearing
+        bearingAngles = []  # Возможно чтобы не создавать такие списки и не возвращать их потом, делают генераторы?
         
-        if side == 'right':
-            if prev_bearing + 180 - corrected_angle < 0:
-                bearing = prev_bearing + 180 - corrected_angle + 360
-            elif prev_bearing + 180 - corrected_angle > 360:
-                bearing = prev_bearing + 180 - corrected_angle - 360
-            else:
-                bearing = prev_bearing + 180 - corrected_angle
-        elif side == 'left':
-            if prev_bearing - 180 + corrected_angle < 0:
-                bearing = prev_bearing - 180 + corrected_angle + 360
-            elif prev_bearing - 180 + corrected_angle > 360:
-                bearing = prev_bearing - 180 + corrected_angle - 360
-            else:
-                bearing = prev_bearing - 180 + corrected_angle
+        # print(previous_bearing, type(previous_bearing))
+        # print(correct_angles[0])
         
-        return bearing
+        for ang in correct_angles:
+            match side:
+                case "right":
+                    present_bearing = previous_bearing + 180.0 - ang.DD  # type: ignore
+                case "left":
+                    present_bearing = previous_bearing - 180.0 + ang.DD  # type: ignore
+            bearingAngles.append(present_bearing)   # type: ignore
+            previous_bearing = present_bearing      # type: ignore
+        
+        return bearingAngles
 
 
 class Angle:
@@ -221,6 +226,13 @@ class Angle:
         return Angle(DD=self.DD + angle_DD)
     
     
+    def __sub__(self, angle_DD: float):
+        if not isinstance(angle_DD, float):
+            raise ArithmeticError("Правый операнд должен быть типом float")
+        
+        return Angle(DD=self.DD - angle_DD)
+    
+    
     def __str__(self):
         return f'{self.D}°{self.M}\'{self.S}"'
     
@@ -260,11 +272,19 @@ class BearingAngle(Angle):
         else:
             self._DD = DD
     
+    
     def __add__(self, angle_DD: float):
         if not isinstance(angle_DD, float):
             raise ArithmeticError("Правый операнд должен быть типом float")
         
         return BearingAngle(DD=self.DD + angle_DD)
+    
+    
+    def __sub__(self, angle_DD: float):
+        if not isinstance(angle_DD, float):
+            raise ArithmeticError("Правый операнд должен быть типом float")
+        
+        return BearingAngle(DD=self.DD - angle_DD)
 
 
 class Point:
@@ -334,7 +354,7 @@ class DB:
 
 
 if __name__ == '__main__':
-    # p = Polygon(3, True)
+    p = Polygon(3, True)
     # Проверяю раскидку невязки
     # print(p.angles)
     # print(p.sort_perim)
@@ -364,8 +384,16 @@ if __name__ == '__main__':
     # print(p.bearing_angle)
     
     # a = Angle(DD=375)
-    b = BearingAngle(DD=350)
-    b += Angle(35, 0, 0).DD
+    # print("a", a)
+    # b = BearingAngle(DD=350)
+    # b += Angle(35, 0, 0).DD
+    # c = a - Angle(25, 0, 0).DD
+    # print("c", c)
+    # c += Angle(0, 25, 0).DD
+    # print("c2", c)
+    # print("a2", a)
+
+    
     
     # print(b.DD)
     
