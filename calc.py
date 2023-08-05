@@ -22,6 +22,7 @@ class Polygon:
         self.measured_angles = self.all_data.get('aPoints') 
         self.bearing_angle = self.all_data.get('bearingAngle')
         self.bearing_angle = BearingAngle(self.bearing_angle.get('Deg'), self.bearing_angle.get('Min'), self.bearing_angle.get('Sec')) # type: ignore
+        self.all_distance = [point.get('HorDist') for point in self.measured_angles]    # type: ignore
         self.initial_coords = self.all_data.get('coords')
         self.angles = {i: Angle(d.get('Deg'), d.get('Min'), d.get('Sec')) for i, d in enumerate(self.measured_angles)} # type: ignore
         self.theoretical_sum_angles = self.calc_sum_of_theoretical_angles()  # теоретическая сумма углов, нужно будет рассчитывать, когда заполнится массив углов
@@ -45,7 +46,7 @@ class Polygon:
         if self.bearing_angle.DD != self.all_bearing_angles[-1].DD:
             raise ArithmeticError("Последний вычисленный дир. угол не сошёлся с исходным, надо бы что-то сделать")
         
-        self.all_points = ...
+        self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i]) for i in range(len(self.angles))]    # type: ignore
     
     
     def get_help_side(self) -> str:
@@ -290,7 +291,7 @@ class BearingAngle(Angle):
 class Point:
     ID = 0
     
-    def __init__(self, angle: Angle, distance: float):
+    def __init__(self, angle: Angle, distance: float, bearing_angle: BearingAngle):
         ''' Точка стояния. На ней измерен горизонтальный угол, дистанция, возможно дир. угол. И возможно координаты уже известны 
         Все точки нумеруются, начиная от нуля (вторая исходная точка, после неё должна идти сразу 1), последняя точка по счёту должна будет быть первой исходной
         От первой на вторую исходную точку известна сторона и дир.угол 
@@ -299,6 +300,7 @@ class Point:
         self.id = Point.ID
         self.angle = angle
         self.distance = distance
+        self.bearing_angle = bearing_angle
         
         Point.ID += 1
         
@@ -306,8 +308,6 @@ class Point:
     def bearing_angle(self):
         if hasattr(self, '_bearing_angle'):
             return self._bearing_angle
-        # else:
-        #     return None
     
     @bearing_angle.setter
     def bearing_angle(self, angle: BearingAngle):
@@ -315,18 +315,21 @@ class Point:
     
     
     def __str__(self):
-        # match self.a:
         match self.bearing_angle:
             case bearing if bearing:
-                return f'{self.angle}, {self.distance}м, {bearing}'
+                return f'|{self.angle}, {self.distance}м, {bearing}|'
             case _:
-                return f'{self.angle}, {self.distance}м'
+                return f'|{self.angle}, {self.distance}м|'
         
         # return f'{self.angle}, {self.distance}м, {self.a}'
 
 
     def __repr__(self):
-        return f'{self.angle}, {self.distance}м'
+        match self.bearing_angle:
+            case bearing if bearing:
+                return f'|{self.angle}, {self.distance}м, {bearing}|'
+            case _:
+                return f'|{self.angle}, {self.distance}м|'
 
 
 class DB:
@@ -392,16 +395,6 @@ if __name__ == '__main__':
     # c += Angle(0, 25, 0).DD
     # print("c2", c)
     # print("a2", a)
-
-    
-    
-    # print(b.DD)
-    
-    # c = Point(a, 100)
-    # c.bearing_angle = b
-    # print(c)
-    
-    # c1 = Point(b, 100)
-    # print(c1)
+    print(p.all_points)
     
     ...
