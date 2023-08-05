@@ -21,7 +21,7 @@ class Polygon:
         self.all_data = db.get_all_data()   # type: ignore
         self.measured_angles = self.all_data.get('aPoints') 
         self.bearing_angle = self.all_data.get('bearingAngle')
-        self.bearing_angle = Angle(self.bearing_angle.get('Deg'), self.bearing_angle.get('Min'), self.bearing_angle.get('Sec')) # type: ignore
+        self.bearing_angle = BearingAngle(self.bearing_angle.get('Deg'), self.bearing_angle.get('Min'), self.bearing_angle.get('Sec')) # type: ignore
         self.initial_coords = self.all_data.get('coords')
         self.angles = {i: Angle(d.get('Deg'), d.get('Min'), d.get('Sec')) for i, d in enumerate(self.measured_angles)} # type: ignore
         self.theoretical_sum_angles = self.calc_sum_of_theoretical_angles()  # теоретическая сумма углов, нужно будет рассчитывать, когда заполнится массив углов
@@ -102,41 +102,51 @@ class Polygon:
         
         if abs(correction_in_each_corner) < one_sec and difference.DD != 0:
             ''' Если секунд меньше чем количество углов (значит в сравнении получится величина меньше чем одна секунда) - надо раскидать по одной секунде начиная с бОльшего по величине угла в полигоне '''
-            print("1", difference)
             sort_index_angles = list(sort_perim.keys())
-            # print(abs(int(difference.DD / one_sec)))
             for i in range(abs(int(difference.DD / one_sec))):
                 ''' Посчитано сколько раз надо раскидать одну секунду в углы и раскидывается '''
-                # print("old", self.fixed_angles[sort_index_angles[i]])
                 self.fixed_angles[sort_index_angles[i]] += one_sec if difference.DD > 0 else -one_sec
-                # print("new", self.fixed_angles[sort_index_angles[i]])
             
             # Попробовать на исходных данных, где не надо будет из этого условия раскидывать. И проверить там, где большая невязка, что б она сразу за одно условие не раскидалась
-            # print("Вызываю ещё раз функцию раскидки поправок")
             new_diffrerence = Angle(DD=(self.theoretical_sum_angles.DD - self.calc_sum_of_practice_angles(self.fixed_angles).DD))  # Невязка
-            # print("past 1", self.calc_sum_of_practice_angles(self.fixed_angles), self.calc_sum_of_practice_angles(self.fixed_angles).DD)
             self.calc_and_send_amendment(new_diffrerence)
-            
-            # print("new dif", new_diffrerence)
         elif abs(correction_in_each_corner) > one_sec:
             ''' Сначала поровну раскидаю секунды, а потом снова вызову эту функцию для проверки
             Во избежании неправильной раскидки я буду вычислять сколько градусов надо вкидывать через обычное деление, получу DD, а после сделаю из него угол и и возьму DD уже из угла, чаще всего он будет меньше, чем получилось при делении.
             '''
-            print("2", difference)
             
             need_correct = Angle(DD=correction_in_each_corner)
             for i in self.fixed_angles:
                 self.fixed_angles[i] += need_correct.DD
             
-            # print("Вызываю ещё раз функцию раскидки поправок")
             new_diffrerence = Angle(DD=(self.theoretical_sum_angles.DD - self.calc_sum_of_practice_angles(self.fixed_angles).DD))  # Невязка
-            # print("past 2", self.calc_sum_of_practice_angles(self.fixed_angles), self.calc_sum_of_practice_angles(self.fixed_angles).DD)
             self.calc_and_send_amendment(new_diffrerence)
-            
-            # print("new dif", new_diffrerence)
-        else:
+        else: ...
             # print("3", difference, "Невязку не надо раскидывать")
-            print("Sum of fixed ang", self.calc_sum_of_practice_angles(self.fixed_angles))
+            # print("Sum of fixed ang", self.calc_sum_of_practice_angles(self.fixed_angles))
+    
+    
+    def calc_next_bearing(self, prev_bearing: float, corrected_angle: float, side: str ='right') -> float:
+        '''Буду передавать предыдущий дирекционный угол и исправленный горизонтальный угол на пункте. Возвращать вычисленный дирекционный угол. Буду использовать это в цикле для добавления в список. Возможно использовать side что б использовать разные формулы для добавления исправленного горизонтального угла с различным знаком'''
+        
+        bearing = 0
+        
+        if side == 'right':
+            if prev_bearing + 180 - corrected_angle < 0:
+                bearing = prev_bearing + 180 - corrected_angle + 360
+            elif prev_bearing + 180 - corrected_angle > 360:
+                bearing = prev_bearing + 180 - corrected_angle - 360
+            else:
+                bearing = prev_bearing + 180 - corrected_angle
+        elif side == 'left':
+            if prev_bearing - 180 + corrected_angle < 0:
+                bearing = prev_bearing - 180 + corrected_angle + 360
+            elif prev_bearing - 180 + corrected_angle > 360:
+                bearing = prev_bearing - 180 + corrected_angle - 360
+            else:
+                bearing = prev_bearing - 180 + corrected_angle
+        
+        return bearing
 
 
 class Angle:
@@ -148,16 +158,14 @@ class Angle:
         Возможно надо накинуть проверку передаваемых аргументов, что б они не были сверхнормы, что б не допускать ошибочнопереданных чисел
         '''
         if DD:
-            self.DD = round(DD, 12)    # Вычисления будут идти без округлений. Из этих вычислений будут получаться ДМС
+            self.DD = round(DD, 12)    # Вычисления будут идти без округлений. Из этих вычислений будут получаться ДМС. Округление навесил из-за суммы углов.
             self.convert_to_DMS()
-            # self.D, self.M, self.S = self.convert_to_DMS(self.DD)
             self.DD = self.convert_to_DD()  # А уже после получения ДМС пересчитаю ДД, что б всё верно хранилось, без лишней херни
         else:
             self.D = D
             self.M = M
             self.S = S
             self.DD = self.convert_to_DD()
-    
     
     @property
     def D(self):
@@ -228,22 +236,77 @@ class Angle:
         из десятичного угла получается гр/мин/сек 
         '''
         
-        self.D = int(self.DD)
-        self.M = int((self.DD - self.D) * 60)
-        self.S = int(round((self.DD - self.D - self.M / 60) * 3600, 0))
+        DD = self.DD
+        self.D = int(DD)
+        self.M = int((DD - self.D) * 60)
+        self.S = int(round((DD - self.D - self.M / 60) * 3600, 0))
+
+
+class BearingAngle(Angle):
+    ''' 
+    Новый класс для дир. угла. Он должен быть не больше 360° 
+    '''
+    
+    @property
+    def DD(self):
+        return self._DD
+    
+    @DD.setter
+    def DD(self, DD):
+        if DD > 360:
+            self._DD = DD - 360
+        elif DD < 0:
+            self._DD = DD + 360
+        else:
+            self._DD = DD
+    
+    def __add__(self, angle_DD: float):
+        if not isinstance(angle_DD, float):
+            raise ArithmeticError("Правый операнд должен быть типом float")
+        
+        return BearingAngle(DD=self.DD + angle_DD)
 
 
 class Point:
-    def __init__(self, id: int, angle: Angle, distance: float):
+    ID = 0
+    
+    def __init__(self, angle: Angle, distance: float):
         ''' Точка стояния. На ней измерен горизонтальный угол, дистанция, возможно дир. угол. И возможно координаты уже известны 
         Все точки нумеруются, начиная от нуля (вторая исходная точка, после неё должна идти сразу 1), последняя точка по счёту должна будет быть первой исходной
         От первой на вторую исходную точку известна сторона и дир.угол 
         Тут должна будет быть проверка на то, что на точке стояния угол не может быть больше 360 градусов, иначе генерить ошибку'''
         
+        self.id = Point.ID
         self.angle = angle
         self.distance = distance
-        self.bearing_angle = 0  # Написать сеттеры внутри, будут назначаться только для первой и последней точки, а потом при вычислении в конце
-        self.coords = ()
+        
+        Point.ID += 1
+        
+    @property
+    def bearing_angle(self):
+        if hasattr(self, '_bearing_angle'):
+            return self._bearing_angle
+        # else:
+        #     return None
+    
+    @bearing_angle.setter
+    def bearing_angle(self, angle: BearingAngle):
+        self._bearing_angle = angle
+    
+    
+    def __str__(self):
+        # match self.a:
+        match self.bearing_angle:
+            case bearing if bearing:
+                return f'{self.angle}, {self.distance}м, {bearing}'
+            case _:
+                return f'{self.angle}, {self.distance}м'
+        
+        # return f'{self.angle}, {self.distance}м, {self.a}'
+
+
+    def __repr__(self):
+        return f'{self.angle}, {self.distance}м'
 
 
 class DB:
@@ -251,11 +314,11 @@ class DB:
         '''
         Инициализирую "соединение" с уловной БД, передаю туда путь до файла с input данными
         ?поработать тут с объектом Path?
+        Отсюда я буду вызывать что-то типа p = Polygon(3, True), при получении данных и тут же будет метод отдачи данных, его конвертация в нужный вид и передача на фронт и всякое такое
         '''
         
         self.path = path
 
-    
     
     def get_all_data(self) -> dict:
         '''
@@ -271,7 +334,7 @@ class DB:
 
 
 if __name__ == '__main__':
-    p = Polygon(3, True)
+    # p = Polygon(3, True)
     # Проверяю раскидку невязки
     # print(p.angles)
     # print(p.sort_perim)
@@ -298,6 +361,19 @@ if __name__ == '__main__':
     # two = one + Angle(0, 0, 10).DD
     # print(two)
     
-    print(p.bearing_angle)
+    # print(p.bearing_angle)
+    
+    # a = Angle(DD=375)
+    b = BearingAngle(DD=350)
+    b += Angle(35, 0, 0).DD
+    
+    # print(b.DD)
+    
+    # c = Point(a, 100)
+    # c.bearing_angle = b
+    # print(c)
+    
+    # c1 = Point(b, 100)
+    # print(c1)
     
     ...
