@@ -27,9 +27,9 @@ p = Polygon(6, True)
 # print(dif * 8 / one_sec)
 
 # Проверяю метод __add__ сложение
-one = Angle(0, 0, 1)
-# print(one.DD)
-ten = Angle(0, 0, 10)
+one = Angle(0, 0, 3600)
+print(one)
+# ten = Angle(0, 0, 10)
 # print(ten.DD)
 # eleven = one + ten.DD
 # print(eleven, eleven.DD, eleven.DD == Angle(0, 0, 11).DD)
@@ -97,5 +97,9 @@ ten = Angle(0, 0, 10)
 # sort_perim = dict(sorted(sort_perim.items()))
 # print(sort_perim)
 
-for i in range(-10):
-    print(i)
+
+# a = 60
+# b = 75
+# с = b%a
+# print(с)
+# print(b % a)
