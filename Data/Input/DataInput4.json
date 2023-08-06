@@ -64,6 +64,7 @@
             "Y": 12919.66 
         }
     ],
-    "direction_of_circling": "right",
-    "side_of_angles": "right"
+    "direction_of_circling": "left",
+    "side_of_angles": "right",
+    "is_closed": true
 }

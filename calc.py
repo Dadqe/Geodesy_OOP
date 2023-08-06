@@ -22,8 +22,10 @@ class Polygon:
         self.measured_angles = self.all_data.get('aPoints') 
         self.bearing_angle = self.all_data.get('bearingAngle')
         self.bearing_angle = BearingAngle(self.bearing_angle.get('Deg'), self.bearing_angle.get('Min'), self.bearing_angle.get('Sec')) # type: ignore
-        self.all_distance = [point.get('HorDist') for point in self.measured_angles]    # type: ignore
-        self.initial_coords = self.all_data.get('coords')
+        self.all_distance = [point.get('HorDist') for point in self.measured_angles[:-1]]    # type: ignore
+        self.initial_coords = [(d.get("X"), d.get("Y")) for d in self.all_data.get('coords')]
+        self.sum_theoretical_coordinate_increments = (self.initial_coords[1][0] - self.initial_coords[0][0],
+                                                      self.initial_coords[1][1] - self.initial_coords[0][1])
         self.angles = {i: Angle(d.get('Deg'), d.get('Min'), d.get('Sec')) for i, d in enumerate(self.measured_angles)} # type: ignore
         self.theoretical_sum_angles = self.calc_sum_of_theoretical_angles()  # теоретическая сумма углов, нужно будет рассчитывать, когда заполнится массив углов
         self.practical_sum_angles = self.calc_sum_of_practice_angles(self.angles)  # практическая сумма углов, просто посчитать сумму углов в массиве
@@ -41,12 +43,14 @@ class Polygon:
 Теория: {self.theoretical_sum_angles}
 Практика исправленная: {self.calc_sum_of_practice_angles(self.fixed_angles)}''')
         
-        self.all_bearing_angles = self.get_all_bearing_angles(self.bearing_angle, list(self.fixed_angles.values()))
+        self.all_bearing_angles = self.calc_all_bearing_angles(self.bearing_angle, list(self.fixed_angles.values()))
         
         if self.bearing_angle.DD != self.all_bearing_angles[-1].DD:
             raise ArithmeticError("Последний вычисленный дир. угол не сошёлся с исходным, надо бы что-то сделать")
         
-        self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i]) for i in range(len(self.angles))]    # type: ignore
+        self.practice_coordinate_increments, self.sum_calculated_coordinate_increments, self.difference_increments, self.difference_abs, self.difference_relative, self.coordinate_increment_correct, self.sum_corrected_coordinate_increments, self.all_coords = self.calc_coordinate_increments()
+        
+        # self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i]) for i in range(len(self.angles))]    # type: ignore
     
     
     def get_help_side(self) -> str:
@@ -134,12 +138,12 @@ class Polygon:
             # print("Sum of fixed ang", self.calc_sum_of_practice_angles(self.fixed_angles))
     
     
-    def get_all_bearing_angles(self, start_bearing, correct_angles, side: str ='right'):
+    def calc_all_bearing_angles(self, start_bearing, correct_angles): #side: str ='right'):
         '''Посчитать все дирекционные углы, исходя из того, какой начальный дир.угол и какие исправленные углы были получены. Учитывается сторона, с который проводились вычисления относительно хода полигона.'''
         
         previous_bearing = start_bearing
         bearingAngles = []  # Возможно чтобы не создавать такие списки и не возвращать их потом, делают генераторы?
-        
+        side = self.all_data.get('side_of_angles')
         # print(previous_bearing, type(previous_bearing))
         # print(correct_angles[0])
         
@@ -153,6 +157,55 @@ class Polygon:
             previous_bearing = present_bearing      # type: ignore
         
         return bearingAngles
+    
+    
+    def calc_coordinate_increments(self):
+        perimetr = sum(self.all_distance)
+        # print(self.all_bearing_angles)
+        # print(self.all_distance)
+        
+        coordinate_increments = [(math.cos(math.radians(self.all_bearing_angles[i].DD)) * self.all_distance[i], 
+                                  math.sin(math.radians(self.all_bearing_angles[i].DD)) * self.all_distance[i]) 
+                                 for i in range(len(self.all_distance))]
+        
+        sum_calculated_coordinate_increments = (sum([d[0] for d in coordinate_increments]), 
+                                                sum([d[1] for d in coordinate_increments]))          # Просто просуммировал вычисленыне приращения
+        
+        difference_increments = (self.sum_theoretical_coordinate_increments[0] - sum_calculated_coordinate_increments[0], 
+                                 self.sum_theoretical_coordinate_increments[1] - sum_calculated_coordinate_increments[1])  # Теория - практика, что б в следующих вычислениях не пришлось брать невязку с обратным знаком...
+        
+        difference_abs = math.hypot(difference_increments[0], difference_increments[1]) # fабс По моему вычисление квадрата суммы переменных
+        difference_relative = (difference_abs / perimetr, 1 / (difference_abs / perimetr)) # fотн Сразу перевёл в удобный вариант масштаба, там всё зависит от разряда теодолитного хода, вот относительно разряда не должно превышать это число. Типа если это условие будет выполняться, то можно приступать к вычислению исправленных приращений координат. Возможно в будущем надо будет придумать эту проверку. ❓ Если число получается больше 0.0005 (это первый разряд или технический? у нас так же на первом курсе было. В интернете написано, что 1й разряд 1:2000, 2й разряд 1:1000), например, 0.00019, то значит это хорошо
+        assert difference_relative[0] <= 1 / 2000, f"Относительная невязка не меньше 1:2000, что является допуском линейной невязки для теодолитного хода 1го разряда, что-то сделать с этим надо. По идее только перемерять расстояния в поле?\nВот вычисленные значения: {difference_relative}"
+        
+        coordinate_increment_correct = [(coordinate_increments[i][0] + (difference_increments[0] * self.all_distance[i] / perimetr),
+                                         coordinate_increments[i][1] + (difference_increments[1] * self.all_distance[i] / perimetr)) 
+                                        for i in range(len(coordinate_increments))]
+        
+        sum_corrected_coordinate_increments = (sum([c[0] for c in coordinate_increment_correct]),
+                                           sum([c[1] for c in coordinate_increment_correct]))
+        
+        assert tuple([round(n, 3) for n in sum_corrected_coordinate_increments]) == tuple([round(n, 3) for n in self.sum_theoretical_coordinate_increments]), f"Исправленные приращения координат не равны теоретическим, надо проверить...\nТеория: {self.sum_theoretical_coordinate_increments}\nПрактика исправленная: {sum_corrected_coordinate_increments}"
+        
+        all_coords = self.calc_all_coordinates(coordinate_increment_correct)
+        
+        assert all_coords[-1] == self.initial_coords[-1], f'Вычисленные координаты конечной точки не равны переданной конечной, надо проверить вычисления.\nПереданные: {self.initial_coords[-1]}\nВычисленные: {all_coords[-1]}'
+            
+        return coordinate_increments, sum_calculated_coordinate_increments, difference_increments, difference_abs, difference_relative, coordinate_increment_correct, sum_corrected_coordinate_increments, all_coords
+    
+    
+    def calc_all_coordinates(self, increment_correct) -> list[tuple[float, float]]:
+        '''Посчитаю все координаты, которые надо посчитать, объединю с исходными и верну в скрипт для передачи'''
+        
+        prev_coord = self.initial_coords[0]
+        coords = [self.initial_coords[0]]   # Или возможно этого делать не надо, т.к. на фронт я хотел бы возвращать только те координаты, которые вычислялись... Или пофиг?
+        
+        for inc in increment_correct:
+            calculated_coords = (round(prev_coord[0] + inc[0], 2), round(prev_coord[1] + inc[1], 2))
+            coords.append(calculated_coords)
+            prev_coord = calculated_coords
+        
+        return coords
 
 
 class Angle:
@@ -288,6 +341,36 @@ class BearingAngle(Angle):
         return BearingAngle(DD=self.DD - angle_DD)
 
 
+class Coords:
+    def __init__(self, x: float, y: float):
+        self.X = x
+        self.Y = y
+    
+    @property
+    def X(self):
+        return self._x
+    
+    @X.setter
+    def X(self, value: float):
+        self._x = value
+    
+    @property
+    def Y(self):
+        return self._y
+    
+    @Y.setter
+    def Y(self, value: float):
+        self._y = value
+    
+    
+    def __str__(self):
+        return f'({self.X}м, {self.X}м)'
+
+
+    def __repr__(self):
+        return f'({self.X}м, {self.X}м)'
+
+
 class Point:
     ID = 0
     
@@ -313,7 +396,16 @@ class Point:
     def bearing_angle(self, angle: BearingAngle):
         self._bearing_angle = angle
     
+    @property
+    def coords(self):
+        if hasattr(self, '_coords'):
+            return self._coords
     
+    @coords.setter
+    def coords(self, coords):
+        self._coords = coords
+    
+    # Написать все варианты шаблонов для печатанья в словарике и просто вызывать именно ту строку, которая подходит, по увеличению будет идти, если вообще смысл есть.
     def __str__(self):
         match self.bearing_angle:
             case bearing if bearing:
@@ -357,44 +449,5 @@ class DB:
 
 
 if __name__ == '__main__':
-    p = Polygon(3, True)
-    # Проверяю раскидку невязки
-    # print(p.angles)
-    # print(p.sort_perim)
-    # print(p.theoretical_sum_angles)
-    # print(p.practical_sum_angles)
-    # print(p.difference)
-    # p.calc_and_send_amendment(p.difference)
-    # print(p.fixed_angles)
-    # a = Angle(0, 3, 0)
-    # a1 = Angle(0, 3, 1)
-    # a2 = Angle(0, -3, -1)
-    # print(-a.DD)
-    # print(a)
-    # a += a1.DD if p.difference.DD > 0 else -a1.DD
-    # print(a)
-    # b = Angle(2939, 59, 50)
-    # b += Angle(0, 0, 10).DD
-    # print(b)
-    # print(p.fixed_angles)
-    
-    # one = Angle(0, 0, 50)
-    
-    # print(one)
-    # two = one + Angle(0, 0, 10).DD
-    # print(two)
-    
-    # print(p.bearing_angle)
-    
-    # a = Angle(DD=375)
-    # print("a", a)
-    # b = BearingAngle(DD=350)
-    # b += Angle(35, 0, 0).DD
-    # c = a - Angle(25, 0, 0).DD
-    # print("c", c)
-    # c += Angle(0, 25, 0).DD
-    # print("c2", c)
-    # print("a2", a)
-    print(p.all_points)
-    
+    p = Polygon(5, True)
     ...

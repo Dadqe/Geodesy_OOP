@@ -81,5 +81,8 @@
             "X": 83030.658,
             "Y": 28140.405 
         }
-    ]
+    ],
+    "direction_of_circling": "right",
+    "side_of_angles": "left",
+    "is_closed": true
 }
