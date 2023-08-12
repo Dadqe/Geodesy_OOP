@@ -23,7 +23,7 @@ class Polygon:
         self.bearing_angle = self.all_data.get('bearingAngle')
         self.bearing_angle = BearingAngle(self.bearing_angle.get('Deg'), self.bearing_angle.get('Min'), self.bearing_angle.get('Sec')) # type: ignore
         self.all_distance = [point.get('HorDist') for point in self.measured_angles[:-1]]    # type: ignore
-        self.initial_coords = [(d.get("X"), d.get("Y")) for d in self.all_data.get('coords')]
+        self.initial_coords = [(d.get("X"), d.get("Y")) for d in self.all_data.get('coords')]   # type: ignore
         self.sum_theoretical_coordinate_increments = (self.initial_coords[1][0] - self.initial_coords[0][0],
                                                       self.initial_coords[1][1] - self.initial_coords[0][1])
         self.angles = {i: Angle(d.get('Deg'), d.get('Min'), d.get('Sec')) for i, d in enumerate(self.measured_angles)} # type: ignore
@@ -198,12 +198,17 @@ class Polygon:
         '''Посчитаю все координаты, которые надо посчитать, объединю с исходными и верну в скрипт для передачи'''
         
         prev_coord = self.initial_coords[0]
+        # Поиск разрядности цифр после запятой в исходных данных
+        discharge = str(prev_coord[0])
+        discharge = len(discharge[discharge.find('.')+1:])
         coords = [self.initial_coords[0]]   # Или возможно этого делать не надо, т.к. на фронт я хотел бы возвращать только те координаты, которые вычислялись... Или пофиг?
         
         for inc in increment_correct:
-            calculated_coords = (round(prev_coord[0] + inc[0], 2), round(prev_coord[1] + inc[1], 2))
+            calculated_coords = (prev_coord[0] + inc[0], prev_coord[1] + inc[1])    # Я тут получаю координату точки и сразу округляю и дальше передаю округлённое значение... Хотя так делать не следует, считать будто надо без округлённых значений, уже потом для сравнения и вывода координат всё округлить. Осталось ввести атрибут, который будет отвечать за то, до какого разряда надо округлять. Либо автоматом это научиться проверять на основании переданных координат
             coords.append(calculated_coords)
             prev_coord = calculated_coords
+        
+        coords = [(round(tup[0], discharge), round(tup[1], discharge)) for tup in coords]
         
         return coords
 
@@ -217,7 +222,8 @@ class Angle:
         Возможно надо накинуть проверку передаваемых аргументов, что б они не были сверхнормы, что б не допускать ошибочнопереданных чисел
         '''
         if DD:
-            self.DD = round(DD, 12)    # Вычисления будут идти без округлений. Из этих вычислений будут получаться ДМС. Округление навесил из-за суммы углов.
+            self.DD = DD
+            # self.DD = round(DD, 12)    # Вычисления будут идти без округлений. Из этих вычислений будут получаться ДМС. Округление навесил из-за суммы углов.
             self.convert_to_DMS()
             self.DD = self.convert_to_DD()  # А уже после получения ДМС пересчитаю ДД, что б всё верно хранилось, без лишней херни
         else:
