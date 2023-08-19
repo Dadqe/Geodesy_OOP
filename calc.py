@@ -46,8 +46,6 @@ class Polygon:
             raise ArithmeticError("Последний вычисленный дир. угол не сошёлся с исходным, надо бы что-то сделать")
         
         self.practice_coordinate_increments, self.sum_calculated_coordinate_increments, self.difference_increments, self.difference_abs, self.difference_relative, self.coordinate_increment_correct, self.sum_corrected_coordinate_increments, self.all_coords = self.calc_coordinate_increments()
-        
-        # self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i], self.practice_coordinate_increments[i], self.coordinate_increment_correct[i], self.all_coords[i]) for i in range(len(self.angles)-1)] + Point(self.fixed_angles.get(len(self.fixed_angles)), self.all_distance[-1], self.all_bearing_angles[-1])    # type: ignore
         self.all_points = self.return_calculated_data()
 
         
@@ -398,67 +396,6 @@ class Coords:
         return f'({self.X}м, {self.X}м)'
 
 
-class Point:
-    ID = 0
-    
-    def __init__(self, angle: Angle, distance: float, bearing_angle: BearingAngle, coord_inc: tuple[float, float], coord_inc_fix: tuple[float, float], coords):
-        ''' Точка стояния. На ней измерен горизонтальный угол, дистанция, возможно дир. угол. И возможно координаты уже известны 
-        Все точки нумеруются, начиная от нуля (вторая исходная точка, после неё должна идти сразу 1), последняя точка по счёту должна будет быть первой исходной
-        От первой на вторую исходную точку известна сторона и дир.угол 
-        Тут должна будет быть проверка на то, что на точке стояния угол не может быть больше 360 градусов, иначе генерить ошибку'''
-        
-        self.id = Point.ID
-        self.angle = angle
-        self.distance = distance
-        self.bearing_angle = bearing_angle
-        self.coordinate_increment = coord_inc
-        self.coordinate_increment_fixed = coord_inc_fix
-        self.coords = coords
-        
-        Point.ID += 1
-        
-    @property
-    def bearing_angle(self):
-        return self._bearing_angle
-    
-    @bearing_angle.setter
-    def bearing_angle(self, angle: BearingAngle):
-        self._bearing_angle = angle
-    
-    @property
-    def coordinate_increment(self):
-        return self._coordinate_increment
-    
-    @coordinate_increment.setter
-    def coordinate_increment(self, increment):
-        self._coordinate_increment = tuple([round(inc, 3) for inc in increment])
-    
-    @property
-    def coordinate_increment_fixed(self):
-        return self._coordinate_increment_fixed
-    
-    @coordinate_increment_fixed.setter
-    def coordinate_increment_fixed(self, increment):
-        self._coordinate_increment_fixed = tuple([round(inc, 3) for inc in increment])
-    
-    @property
-    def coords(self):
-        return self._coords
-    
-    @coords.setter
-    def coords(self, coords):
-        self._coords = coords
-    
-    # ПЕРЕДЕЛАТЬ, не будет всяких лишних проверок и условий. Этот класс уже для готовой работы.
-    # Написать все варианты шаблонов для печатанья в словарике и просто вызывать именно ту строку, которая подходит, по увеличению будет идти, если вообще смысл есть.
-    def __str__(self):
-        return f'|{self.angle}, {self.distance}, {self.bearing_angle}, {self.coordinate_increment[0]}~{self.coordinate_increment[1]}, {self.coordinate_increment_fixed[0]}~{self.coordinate_increment_fixed[1]}, {self.coords[0]} {self.coords[1]}|'
-
-
-    def __repr__(self):
-        return f'|{self.angle}, {self.distance}, {self.bearing_angle}, {self.coordinate_increment[0]}~{self.coordinate_increment[1]}, {self.coordinate_increment_fixed[0]}~{self.coordinate_increment_fixed[1]}, {self.coords[0]} {self.coords[1]}|'
-
-
 class DB:
     def __init__(self, data: dict|int):
         '''
@@ -491,15 +428,13 @@ class DB:
                     f.write(json.dumps(data, ensure_ascii=False, indent=4, default=str))    # Аргумент default из-за ошибки raise TypeError(f'Object of type {o.__class__.__name__} ', что б неизвестные типы для сериализатора JSON превращались в строку
         
     
-    
 def main():
     n = 6
     db = DB(n)
     p = Polygon(db.get_all_data())
     print(p.fixed_angles)
     # db.write_data(p.all_points)
-    # pprint.pprint(p.all_points)
-        
+    # pprint.pprint(p.all_points)  
 
 
 if __name__ == '__main__':
