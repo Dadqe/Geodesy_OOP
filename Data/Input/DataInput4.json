@@ -65,6 +65,6 @@
         }
     ],
     "direction_of_circling": "left",
-    "side_of_angles": "right",
+    "side_of_angles": "left",
     "is_closed": true
 }

@@ -1,0 +1,106 @@
+{
+    "aPoints": [
+        {
+            "Deg": 107,
+            "Min": 17,
+            "Sec": 30,
+            "HorDist": 33.55
+        },
+        {
+            "Deg": 182,
+            "Min": 59,
+            "Sec": 30,
+            "HorDist": 42.35
+        },
+        {
+            "Deg": 205,
+            "Min": 0,
+            "Sec": 0,
+            "HorDist": 41.95
+        },
+        {
+            "Deg": 109,
+            "Min": 25,
+            "Sec": 0,
+            "HorDist": 59.40
+        },
+        {
+            "Deg": 119,
+            "Min": 9,
+            "Sec": 30,
+            "HorDist": 56.80
+        },
+        {
+            "Deg": 172,
+            "Min": 43,
+            "Sec": 0,
+            "HorDist": 66.61
+        },
+        {
+            "Deg": 193,
+            "Min": 4,
+            "Sec": 30,
+            "HorDist": 90.60
+        },
+        {
+            "Deg": 150,
+            "Min": 6,
+            "Sec": 0,
+            "HorDist": 50.81
+        },
+        {
+            "Deg": 214,
+            "Min": 47,
+            "Sec": 30,
+            "HorDist": 78.00
+        },
+        {
+            "Deg": 109,
+            "Min": 39,
+            "Sec": 30,
+            "HorDist": 52.93
+        },
+        {
+            "Deg": 128,
+            "Min": 25,
+            "Sec": 30,
+            "HorDist": 52.40
+        },
+        {
+            "Deg": 208,
+            "Min": 3,
+            "Sec": 0,
+            "HorDist": 49.38
+        },
+        {
+            "Deg": 119,
+            "Min": 16,
+            "Sec": 30,
+            "HorDist": 46.32
+        },
+        {
+            "Deg": 139,
+            "Min": 59,
+            "Sec": 30,
+            "HorDist": 0
+        }
+    ],
+    "bearingAngle": {
+        "Deg": 172,
+        "Min": 18,
+        "Sec": 0
+    },
+    "coords": [
+        {
+            "X": 6101154.81,
+            "Y": 392433.70 
+        },
+        {
+            "X": 6101446.84,
+            "Y": 392394.21
+        }
+    ],
+    "direction_of_circling": "right",
+    "side_of_angles": "right",
+    "is_closed": true
+}

@@ -50,7 +50,9 @@ class Polygon:
         
         self.practice_coordinate_increments, self.sum_calculated_coordinate_increments, self.difference_increments, self.difference_abs, self.difference_relative, self.coordinate_increment_correct, self.sum_corrected_coordinate_increments, self.all_coords = self.calc_coordinate_increments()
         
-        # self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i]) for i in range(len(self.angles))]    # type: ignore
+        self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i], self.practice_coordinate_increments[i], self.coordinate_increment_correct[i], self.all_coords[i]) for i in range(len(self.angles)-1)] + Point(self.fixed_angles.get(len(self.fixed_angles)), self.all_distance[-1], self.all_bearing_angles[-1])    # type: ignore
+        
+        
     
     
     def get_help_side(self) -> str:
@@ -380,7 +382,7 @@ class Coords:
 class Point:
     ID = 0
     
-    def __init__(self, angle: Angle, distance: float, bearing_angle: BearingAngle):
+    def __init__(self, angle: Angle, distance: float, bearing_angle: BearingAngle, coord_inc: tuple[float, float], coord_inc_fix: tuple[float, float], coords):
         ''' Точка стояния. На ней измерен горизонтальный угол, дистанция, возможно дир. угол. И возможно координаты уже известны 
         Все точки нумеруются, начиная от нуля (вторая исходная точка, после неё должна идти сразу 1), последняя точка по счёту должна будет быть первой исходной
         От первой на вторую исходную точку известна сторона и дир.угол 
@@ -390,44 +392,52 @@ class Point:
         self.angle = angle
         self.distance = distance
         self.bearing_angle = bearing_angle
+        self.coordinate_increment = coord_inc
+        self.coordinate_increment_fixed = coord_inc_fix
+        self.coords = coords
         
         Point.ID += 1
         
     @property
     def bearing_angle(self):
-        if hasattr(self, '_bearing_angle'):
-            return self._bearing_angle
+        return self._bearing_angle
     
     @bearing_angle.setter
     def bearing_angle(self, angle: BearingAngle):
         self._bearing_angle = angle
     
     @property
+    def coordinate_increment(self):
+        return self._coordinate_increment
+    
+    @coordinate_increment.setter
+    def coordinate_increment(self, increment):
+        self._coordinate_increment = tuple([round(inc, 3) for inc in increment])
+    
+    @property
+    def coordinate_increment_fixed(self):
+        return self._coordinate_increment_fixed
+    
+    @coordinate_increment_fixed.setter
+    def coordinate_increment_fixed(self, increment):
+        self._coordinate_increment_fixed = tuple([round(inc, 3) for inc in increment])
+    
+    @property
     def coords(self):
-        if hasattr(self, '_coords'):
-            return self._coords
+        return self._coords
     
     @coords.setter
     def coords(self, coords):
         self._coords = coords
     
+    # ПЕРЕДЕЛАТЬ, не будет всяких лишних проверок и условий. Этот класс уже для готовой работы.
     # Написать все варианты шаблонов для печатанья в словарике и просто вызывать именно ту строку, которая подходит, по увеличению будет идти, если вообще смысл есть.
     def __str__(self):
-        match self.bearing_angle:
-            case bearing if bearing:
-                return f'|{self.angle}, {self.distance}м, {bearing}|'
-            case _:
-                return f'|{self.angle}, {self.distance}м|'
-        
-        # return f'{self.angle}, {self.distance}м, {self.a}'
+        return f'|{self.angle}, {self.distance}, {self.bearing_angle}, {self.coordinate_increment[0]}~{self.coordinate_increment[1]}, {self.coordinate_increment_fixed[0]}~{self.coordinate_increment_fixed[1]}, {self.coords[0]} {self.coords[1]}|'
 
 
     def __repr__(self):
-        match self.bearing_angle:
-            case bearing if bearing:
-                return f'|{self.angle}, {self.distance}м, {bearing}|'
-            case _:
-                return f'|{self.angle}, {self.distance}м|'
+        return f'|{self.angle}, {self.distance}, {self.bearing_angle}, {self.coordinate_increment[0]}~{self.coordinate_increment[1]}, {self.coordinate_increment_fixed[0]}~{self.coordinate_increment_fixed[1]}, {self.coords[0]} {self.coords[1]}|'
 
 
 class DB:
@@ -455,5 +465,16 @@ class DB:
 
 
 if __name__ == '__main__':
-    p = Polygon(5, True)
+    p = Polygon(6, True)
+    # [print(point) for point in p.all_bearing_angles]
+    # print(p.difference, p.permissible_discrepancy, p.theoretical_sum_angles, p.practical_sum_angles, p.theoretical_sum_angles)
+    # print(len(p.angles), len(p.all_bearing_angles), len(p.all_distance), len(p.coordinate_increment_correct))
+    # print(p.angles, p.fixed_angles, p.all_bearing_angles, p.all_coords, p.practice_coordinate_increments, sep='\n')
+    # [print(t) for t in p.all_coords]
+    # print(p.all_points)
+    [print(point) for point in p.all_points]
+    # t = p.coordinate_increment_correct[0]
+    # print(t)
+    # t_new = tuple([round(p, 3) for p in t])
+    # print(t_new)
     ...
