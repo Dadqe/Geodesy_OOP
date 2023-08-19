@@ -50,11 +50,11 @@ class Polygon:
         
         self.practice_coordinate_increments, self.sum_calculated_coordinate_increments, self.difference_increments, self.difference_abs, self.difference_relative, self.coordinate_increment_correct, self.sum_corrected_coordinate_increments, self.all_coords = self.calc_coordinate_increments()
         
-        self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i], self.practice_coordinate_increments[i], self.coordinate_increment_correct[i], self.all_coords[i]) for i in range(len(self.angles)-1)] + Point(self.fixed_angles.get(len(self.fixed_angles)), self.all_distance[-1], self.all_bearing_angles[-1])    # type: ignore
+        # self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i], self.practice_coordinate_increments[i], self.coordinate_increment_correct[i], self.all_coords[i]) for i in range(len(self.angles)-1)] + Point(self.fixed_angles.get(len(self.fixed_angles)), self.all_distance[-1], self.all_bearing_angles[-1])    # type: ignore
+        self.all_points = {i: [self.fixed_angles.get(i), self.all_bearing_angles[i], self.all_distance[i], self.practice_coordinate_increments[i], self.coordinate_increment_correct[i], self.all_coords[i]] for i in range(len(self.angles)-1)}
+        self.all_points.update({len(self.angles)-1: [self.fixed_angles.get(len(self.angles)-1), self.all_bearing_angles[len(self.angles)-1]]})
+
         
-        
-    
-    
     def get_help_side(self) -> str:
         '''
         В зависимости от того, какие снимались Левые/Правые углы по ходу движения и в какую часовую сторону шёл полигон надо вычислить вспомогательную сторону, что б понимать, по какой формуле вычислять теоретическую сумму горизонтальных углов.
@@ -472,9 +472,5 @@ if __name__ == '__main__':
     # print(p.angles, p.fixed_angles, p.all_bearing_angles, p.all_coords, p.practice_coordinate_increments, sep='\n')
     # [print(t) for t in p.all_coords]
     # print(p.all_points)
-    [print(point) for point in p.all_points]
-    # t = p.coordinate_increment_correct[0]
-    # print(t)
-    # t_new = tuple([round(p, 3) for p in t])
-    # print(t_new)
+    [print(i, point) for i, point in p.all_points.items()]
     ...
