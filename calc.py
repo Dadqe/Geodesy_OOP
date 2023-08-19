@@ -5,7 +5,7 @@ import pprint
 
 
 class Polygon:
-    def __init__(self, data: dict|int, from_local: bool=False):
+    def __init__(self, data: dict):
     # def __init__(self):
         '''
         Может буду что-то передавать, может надо, может нет, типа сразу при создании передавать направление, исходные координаты, все экземпляры углов...
@@ -14,12 +14,8 @@ class Polygon:
         # type: ignore
         # db = DB("Data/Input/DataInput6.json")
         # db = {'Answer': 'I have not get any data'}    # На всякий случай, если совсем ничего не передадут и нечего читать будет. Мб это раньше надо в АПИ самой проверку делать и возвращать там что-то
-        if from_local:
-            db = DB(f"Data/Input/DataInput{data}.json")
-        else:
-            db = data
         
-        self.all_data = db.get_all_data()   # type: ignore
+        self.all_data = data
         self.measured_angles = self.all_data.get('aPoints') 
         self.bearing_angle = self.all_data.get('bearingAngle')
         self.bearing_angle = BearingAngle(self.bearing_angle.get('Deg'), self.bearing_angle.get('Min'), self.bearing_angle.get('Sec')) # type: ignore
@@ -464,14 +460,15 @@ class Point:
 
 
 class DB:
-    def __init__(self, path: str):
+    def __init__(self, data: dict|int):
         '''
         Инициализирую "соединение" с уловной БД, передаю туда путь до файла с input данными
         ?поработать тут с объектом Path?
-        Отсюда я буду вызывать что-то типа p = Polygon(3, True), при получении данных и тут же будет метод отдачи данных, его конвертация в нужный вид и передача на фронт и всякое такое
+        при получении данных и тут же будет метод отдачи данных, его конвертация в нужный вид и передача на фронт и всякое такое
         '''
         
-        self.path = path
+        self.path = "Data"
+        self.data = data
 
     
     def get_all_data(self) -> dict:
@@ -479,23 +476,33 @@ class DB:
         Прочитаю JSON, отдам все данные в переменную, это будет словарик, по идее?
         '''
         
-        with open(self.path, "r", encoding="utf-8") as f:
-            return json.loads(f.read())
+        match self.data:
+            case int():
+                with open(self.path + f"/Input/DataInput{self.data}.json", "r", encoding="utf-8") as f:
+                    return json.loads(f.read())
+            case dict():
+                return self.data
     
     
+    def write_data(self, data):
+        match self.data:
+            case int():
+                with open(self.path + f"/Output/DataOutput{self.data}.json", "w", encoding="utf-8") as f:
+                    f.write(json.dumps(data, ensure_ascii=False, indent=4, default=str))    # Аргумент default из-за ошибки raise TypeError(f'Object of type {o.__class__.__name__} ', что б неизвестные типы для сериализатора JSON превращались в строку
         
+    
+    
+def main():
+    n = 6
+    db = DB(n)
+    p = Polygon(db.get_all_data())
+    print(p.fixed_angles)
+    # db.write_data(p.all_points)
+    # pprint.pprint(p.all_points)
         
 
 
 if __name__ == '__main__':
-    p = Polygon(6, True)
-    # [print(point) for point in p.all_bearing_angles]
-    # print(p.difference, p.permissible_discrepancy, p.theoretical_sum_angles, p.practical_sum_angles, p.theoretical_sum_angles)
-    # print(len(p.angles), len(p.all_bearing_angles), len(p.all_distance), len(p.coordinate_increment_correct))
-    # print(p.angles, p.fixed_angles, p.all_bearing_angles, p.all_coords, p.practice_coordinate_increments, sep='\n')
-    # [print(t) for t in p.all_coords]
-    pprint.pprint(p.all_points)
-    # a = [(round(t[0], 3), round(t[1], 3)) for t in p.practice_coordinate_increments]
-    # a = list(map(lambda tup: (round(tup[0], 3), round(tup[1], 3)), p.practice_coordinate_increments))
-    # print(a)
+    main()
+    
     ...
