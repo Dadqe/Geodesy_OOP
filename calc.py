@@ -1,6 +1,7 @@
 from math import sqrt
 import json
 import math
+import pprint
 
 
 class Polygon:
@@ -51,8 +52,7 @@ class Polygon:
         self.practice_coordinate_increments, self.sum_calculated_coordinate_increments, self.difference_increments, self.difference_abs, self.difference_relative, self.coordinate_increment_correct, self.sum_corrected_coordinate_increments, self.all_coords = self.calc_coordinate_increments()
         
         # self.all_points = [Point(self.fixed_angles.get(i), self.all_distance[i], self.all_bearing_angles[i], self.practice_coordinate_increments[i], self.coordinate_increment_correct[i], self.all_coords[i]) for i in range(len(self.angles)-1)] + Point(self.fixed_angles.get(len(self.fixed_angles)), self.all_distance[-1], self.all_bearing_angles[-1])    # type: ignore
-        self.all_points = {i: [self.fixed_angles.get(i), self.all_bearing_angles[i], self.all_distance[i], self.practice_coordinate_increments[i], self.coordinate_increment_correct[i], self.all_coords[i]] for i in range(len(self.angles)-1)}
-        self.all_points.update({len(self.angles)-1: [self.fixed_angles.get(len(self.angles)-1), self.all_bearing_angles[len(self.angles)-1]]})
+        self.all_points = self.return_calculated_data()
 
         
     def get_help_side(self) -> str:
@@ -213,6 +213,29 @@ class Polygon:
         coords = [(round(tup[0], discharge), round(tup[1], discharge)) for tup in coords]
         
         return coords
+    
+    
+    def return_calculated_data(self):
+        data_out = {
+            "angles": self.fixed_angles,
+            "bearing_angles": self.all_bearing_angles,
+            "sum_measured_angles": self.practical_sum_angles,
+            "theoretical_sum_of_angles": self.theoretical_sum_angles,
+            "difference": self.difference,
+            "permissible_difference": self.permissible_discrepancy,
+            "sum_correct_angles": self.calc_sum_of_practice_angles(self.fixed_angles),
+            "perimetr": sum(self.all_distance),
+            "coordinate_increments": list(map(lambda tup: (round(tup[0], 3), round(tup[1], 3)), self.practice_coordinate_increments)),
+            "coordinate_increment_correct": list(map(lambda tup: (round(tup[0], 3), round(tup[1], 3)), self.coordinate_increment_correct)),
+            "sum_calculated_coordinate_increments": tuple(map(lambda coord: round(coord, 3), self.sum_calculated_coordinate_increments,)),
+            "difference_increments": tuple(map(lambda coord: round(coord, 3), self.difference_increments,)),
+            "sum_corrected_coordinate_increments": tuple(map(lambda coord: round(coord, 3), self.sum_corrected_coordinate_increments,)),
+            "difference_abs": round(self.difference_abs, 5),
+            "difference_relative": tuple(map(lambda coord: round(coord, 5), self.difference_relative,)),
+            "all_coords": self.all_coords
+        }
+        
+        return data_out
 
 
 class Angle:
@@ -471,6 +494,8 @@ if __name__ == '__main__':
     # print(len(p.angles), len(p.all_bearing_angles), len(p.all_distance), len(p.coordinate_increment_correct))
     # print(p.angles, p.fixed_angles, p.all_bearing_angles, p.all_coords, p.practice_coordinate_increments, sep='\n')
     # [print(t) for t in p.all_coords]
-    # print(p.all_points)
-    [print(i, point) for i, point in p.all_points.items()]
+    pprint.pprint(p.all_points)
+    # a = [(round(t[0], 3), round(t[1], 3)) for t in p.practice_coordinate_increments]
+    # a = list(map(lambda tup: (round(tup[0], 3), round(tup[1], 3)), p.practice_coordinate_increments))
+    # print(a)
     ...
