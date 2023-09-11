@@ -1,7 +1,10 @@
-from math import sqrt
 import json
 import math
 import pprint
+from pathlib import Path
+
+PYTHON_PATH = Path(__file__)                    # Объект пути к исполняемому питоновскому файлу
+DATA_PATH = PYTHON_PATH.parent / "Data"         # Объект пути к папке Data
 
 
 class Polygon:
@@ -90,9 +93,9 @@ class Polygon:
     def calc_permissible_discrepancy(self, n: int, accuracy: int = 30):
         ''' Посчитать допустимую невязку хода.
         Она зависит от ПРИБОРА, которым измеряют (двойная точность прибора) и от количества углов. Вдруг понадобится менять значение - я напишу параметр, но задам дефолтное значение 1 МИНУТУ, это для Т30. От того, какую величину пишут, будет зависеть то, в какой величине получается допуск. Если 1 минута, значит допуск в минутах, иначе в секундах. '''
-        # res = Angle(DD=((2 * Angle(0, 0, 30).DD) * sqrt(n)))
+        # res = Angle(DD=((2 * Angle(0, 0, 30).DD) * math.sqrt(n)))
         
-        return Angle(DD=((2 * Angle(0, 0, 30).DD) * sqrt(n)))
+        return Angle(DD=((2 * Angle(0, 0, 30).DD) * math.sqrt(n)))
     
     
     def calc_and_send_amendment(self, difference):
@@ -397,16 +400,18 @@ class Coords:
 
 
 class DB:
-    def __init__(self, data: dict|int):
+    def __init__(self):
         '''
         Инициализирую "соединение" с уловной БД, передаю туда путь до файла с input данными
         ?поработать тут с объектом Path?
         при получении данных и тут же будет метод отдачи данных, его конвертация в нужный вид и передача на фронт и всякое такое
         '''
-        
+
+    
+    def take_data(self,  data: dict|int):
         self.path = "Data"
         self.data = data
-
+    
     
     def get_all_data(self) -> dict:
         '''
@@ -426,15 +431,27 @@ class DB:
             case int():
                 with open(self.path + f"/Output/DataOutput{self.data}.json", "w", encoding="utf-8") as f:
                     f.write(json.dumps(data, ensure_ascii=False, indent=4, default=str))    # Аргумент default из-за ошибки raise TypeError(f'Object of type {o.__class__.__name__} ', что б неизвестные типы для сериализатора JSON превращались в строку
+            # А если self.data не число (т.е. не какие-то заготовленные данные, то их надо будет под каким-то другим форматом записать, типа под форматом даты/времени юникстайм мб)
+    
+    
+    def get_count_initial_data(self):
+        input_path = DATA_PATH / 'Input'
+        all_files = [int(f.name.lstrip("DataInput").rstrip(".json")) for f in input_path.iterdir()]
+        
+        return all_files
         
     
 def main():
-    n = 6
-    db = DB(n)
+    n = 1
+    db = DB()
+    db.take_data(n)
     p = Polygon(db.get_all_data())
-    print(p.fixed_angles)
+    pprint.pprint(p.return_calculated_data())
+    # print(p.fixed_angles)
     # db.write_data(p.all_points)
-    # pprint.pprint(p.all_points)  
+    # pprint.pprint(p.all_points)
+    # print(db.get_count_initial_data())
+    ...
 
 
 if __name__ == '__main__':
